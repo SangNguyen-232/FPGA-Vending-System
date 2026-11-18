@@ -1,15 +1,15 @@
 # FPGA Vending System: Setup and User Guide
 
-This English guide uses the [course technical report](DATKLL.pdf), especially section 2.1 and Figures 4.1-4.3, to explain the intended administrator and user workflows. Every operating instruction is reconciled with the current Verilog RTL and XDC constraints. Where the report and implementation differ, the instructions follow the current source; section 11 records the differences.
+This guide walks you through creating a Vivado project from the Verilog sources, connecting the Arty Z7-20, and using the controller to configure stock and complete a purchase.
 
 Read the limitations in section 9 before planning a hardware demonstration. The commands below have been checked against the source layout; synthesis, simulation, timing closure, and physical operation still require validation in your own Vivado installation and on your hardware.
 
 | Your objective | Follow these sections |
 | --- | --- |
-| Understand the design | Sections 1 and 11, then the linked report |
+| Understand the design | Section 1 for the RTL modules and section 8 for the controls |
 | Inspect the existing LCD simulation without a board | Sections 2-5 |
 | Run a physical demonstration | Sections 2-4 and 6-9; review the simulation limitations in section 5 |
-| Diagnose unexpected behavior | Sections 9-11 |
+| Diagnose unexpected behavior | Sections 9 and 10 |
 
 ## 1. What runs where
 
@@ -17,7 +17,7 @@ The project contains Verilog RTL, an XDC constraints file, and a small LCD testb
 
 The controller has no processor software, operating system, network service, database, package-manager dependencies, or environment variables to configure. All product prices, stock, and balance are held in registers and are cleared by reset; there is no persistent transaction storage.
 
-The report's administrator/user blocks describe responsibilities. In the actual RTL, `top_button_handler` owns both operating modes, product selection, prices, stock, balance, and LCD text. It instantiates four `button_debounce` modules, one per button, and one `LCD_display` module for the parallel LCD signals. `test_lcd_display` exercises only the LCD module; it does not exercise the full vending controller.
+The top-level module `top_button_handler` controls both operating modes, product selection, prices, stock, balance, and LCD text. It instantiates four `button_debounce` modules, one per button, and one `LCD_display` module for the parallel LCD signals. `test_lcd_display` exercises only the LCD module; it does not exercise the full vending controller.
 
 ## 2. Prerequisites
 
@@ -59,7 +59,6 @@ The source layout is:
 FPGA-Vending-System/
   README.md
   GUIDE.md
-  DATKLL.pdf
   sources_1/new/
     top_button_handler.v
     button_debounce.v
@@ -166,7 +165,7 @@ Closing Vivado does not stop the programmed logic while the board remains powere
 
 ### 8.1 Identify the controls
 
-Figures 4.2 and 4.3 in the report illustrate these mode-dependent controls. In this checkout, onboard **SW0** is the global reset (`rst`), and onboard **SW1** selects the operating mode (`sw_au`). The four product-selection switches are external inputs named `sw_p`; do not confuse a product switch with onboard SW0 or SW1.
+Onboard **SW0** is the global reset (`rst`), and onboard **SW1** selects the operating mode (`sw_au`). The four product-selection switches are external inputs named `sw_p`; do not confuse a product switch with onboard SW0 or SW1.
 
 Release all buttons and turn all four product switches off before resetting. Return SW0 low after reset. Press and release one button at a time, allowing the LCD to refresh before the next action. The debounce logic generates an event for an accepted low-to-high transition; holding a button high does not continuously repeat its action.
 
@@ -274,29 +273,3 @@ For each test, record the source revision or local changes, Vivado version, FPGA
 | No FPGA appears in Hardware Manager | Check USB data capability, power, cable drivers, and target connection. |
 
 Before submitting changes, inspect `git diff --check` and `git diff`, then perform the simulation and hardware checks appropriate to the modified logic. Keep generated Vivado files in `build/`. Use English for all comments, documentation, README content, and setup instructions. Keep this guide synchronized with the actual tool requirements, source files, constraints, commands, and observed limitations.
-
-## 11. Technical report and source alignment
-
-The [course technical report](DATKLL.pdf), dated December 15, 2024, describes the original project for CO3091. It includes an introduction, intended features, design blocks, operation diagrams, conclusions, and a team contribution table. Open it in a PDF reader; reading the report does not require Vivado.
-
-| Report location | How it is used in this guide |
-| --- | --- |
-| Sections 1.2-1.4, pages 3-4 | Tool and hardware overview, checked against the actual source and pin constraints in sections 1-6 |
-| Section 2.1, pages 5-6 | Administrator/user operation and LCD fields, expanded into section 8's explicit control and display tables |
-| Section 3, pages 8-9 | Conceptual responsibilities, mapped to the actual RTL modules in section 1 |
-| Figures 4.1-4.3, pages 10-11 | Purchase flow and button mappings, used for the step-by-step checks and cancellation procedure in section 8 |
-| Section 5, pages 12-13 | Original conclusions, proposed improvements, and team attribution; not treated as new validation evidence |
-
-Use the report to understand the project's original design context. Use the current RTL, XDC, and this guide to determine the behavior and setup of this checkout. The report's implementation narrative is not a substitute for a reproducible simulation result, synthesis/timing report, or hardware test of the current files.
-
-| Topic | Description in the report | Behavior or limitation in the current source |
-| --- | --- | --- |
-| Product reset, section 2.1 and Figure 4.3 | The prose specifies a price of 1 and stock of 0, while Figure 4.3 specifies a price of 0 and stock of 0. | Both global reset and administrator BTN3 set the affected prices and stock to 0, consistent with Figure 4.3. Configure a nonzero price before a paid-purchase demonstration. |
-| Maximum balance, section 2.1 | The stated maximum deposit is 99 units. | `money` is an 8-bit register with values from 0 to 255. The comparisons against 9995 and 9990 do not impose a 99-unit limit or prevent 8-bit overflow. |
-| Dispensing and refunds, sections 1.4, 2, and 3.2 | The narrative describes releasing a product and returning change. | The RTL adjusts stock and balance, displays status, and drives LEDs/BCD values. It contains no dispensing or cash-return actuator interface. Clearing the balance is a register operation. |
-| Starting the next purchase, sections 2.1 and 4 | Section 2.1 describes a five-second status period; section 4 says the next transaction can start without waiting. | The status counter runs for approximately five seconds at 125 MHz while user mode and a valid product selection remain active. Other selection/mode states pause it, and buttons remain active. For section 8's manual procedure, keep the same product selected and wait without pressing buttons until the normal product display returns. |
-| Changing products, section 2.1 | The user can change the selected product using its switches. | Changing `sw_p` does not automatically clear the pending quantity and total price. Finish or clear the pending selection as described in section 9. |
-| Stock check, Figure 4.1 | The flowchart compares available stock with the requested quantity before dispensing. | Quantity increases are bounded by stock, but the purchase branch only checks that stock is nonzero, the quantity is nonzero, and the cached total is affordable. It does not recheck that quantity is at most stock. A stale quantity after changing products can therefore cause stock underflow. |
-| Future connectivity, section 5 | IoT monitoring and AI integration are proposed improvements. | Neither network connectivity nor AI functionality is implemented in this repository. |
-
-These differences are recorded without changing the RTL to match the report. Any future implementation change needs its own validation and corresponding updates to this guide.

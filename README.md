@@ -4,8 +4,6 @@ A Verilog vending-machine controller developed for **CO3091 - Logic Design Proje
 
 Start with [GUIDE.md](GUIDE.md) for prerequisites, cloning, Vivado project creation, simulation, wiring, programming, and a manual verification procedure.
 
-The [course technical report](DATKLL.pdf), dated December 15, 2024, provides the project's original design narrative, diagrams, and team contribution record. Some descriptions differ from the current RTL; consult the [report-to-source comparison](GUIDE.md#11-technical-report-and-source-alignment) before using it as an operating specification.
-
 ## Implemented behavior
 
 - Switch between user and administrator modes.
@@ -27,7 +25,6 @@ The [course technical report](DATKLL.pdf), dated December 15, 2024, provides the
 | `sources_1/new/test_lcd_display.v` | Legacy LCD stimulus testbench |
 | `constrs_1/imports/Downloads/Arty-Z7-20-Master.xdc` | Clock and I/O pin constraints |
 | `GUIDE.md` | New-user setup and verification instructions |
-| `DATKLL.pdf` | Course technical report, design diagrams, and contribution record |
 
 ## Current limitations
 
