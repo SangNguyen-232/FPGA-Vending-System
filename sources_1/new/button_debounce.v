@@ -26,11 +26,11 @@ module button_debounce(
     input button_in,
     output reg button_flag
 );
-    reg [1:0] sync;          // ??ng b? hóa tín hi?u nút nh?n
-    reg stable_state;        // Tr?ng thái ?n ??nh
-    reg [19:0] counter;      // B? ??m th?i gian ch?ng rung
+    reg [1:0] sync;          // Two-stage button synchronizer
+    reg stable_state;        // Last accepted button state
+    reg [19:0] counter;      // Debounce counter
     
-    localparam DEBOUNCE_TIME = 20'd1250000; // Th?i gian ch?ng rung (~10ms)
+    localparam DEBOUNCE_TIME = 20'd1250000; // Intended as 10 ms at 125 MHz; this 20-bit literal truncates to 201424
 
     always @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -39,11 +39,11 @@ module button_debounce(
             button_flag <= 1'b0;
             counter <= 20'd0;
         end else begin
-            // ??ng b? hóa nút nh?n
+            // Synchronize the button input
             sync[1] <= sync[0];
             sync[0] <= button_in;
 
-            // X? lý debounce
+            // Accept a stable transition after the debounce interval
             if (sync[0] == sync[1]) begin
                 if (sync[0] != stable_state) begin
                     if (counter == DEBOUNCE_TIME) begin

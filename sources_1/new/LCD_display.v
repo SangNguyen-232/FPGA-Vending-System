@@ -3,10 +3,10 @@
     module LCD_display(
         input clk,
         input rst,
-        input update,              // Tín hi?u yêu c?u c?p nh?t
+        input update,              // Mode/update input
         input [3:0] sw_p,
-        input [127:0] line1,       // N?i dung dòng 1
-        input [127:0] line2,       // N?i dung dòng 2
+        input [127:0] line1,       // First line: sixteen packed character bytes
+        input [127:0] line2,       // Second line: sixteen packed character bytes
         input flag_counter,
         output reg rs,
         output reg rw,
@@ -28,7 +28,7 @@
         localparam SET_CURSOR2 = 4'd5;
         localparam WRITE_LINE2 = 4'd6;
         localparam IDLE        = 4'd7;
-        localparam CHECK_UPDATE = 4'd8; // Thêm tr?ng thái ki?m tra c?p nh?t
+        localparam CHECK_UPDATE = 4'd8; // Wait before refreshing the display
 
     
         always @(posedge clk or posedge rst) begin
@@ -88,7 +88,7 @@
                     WRITE_LINE1: begin
                         if (char_index < 16) begin
                             if (delay_counter <= 50000) begin
-                                en <= 1; rs <= 1; rw <= 0; data <= (line1 >> (8 * (15 - char_index))) & 8'hFF; // G?i k? t? t? line1
+                                en <= 1; rs <= 1; rw <= 0; data <= (line1 >> (8 * (15 - char_index))) & 8'hFF; // Send the next character from line 1
                             end else if (delay_counter < 100000) begin
                                 en <= 0;
                             end else begin
@@ -116,7 +116,7 @@
                     WRITE_LINE2: begin
                         if (char_index < 16) begin
                             if (delay_counter <= 50000) begin
-                                en <= 1; rs <= 1; rw <= 0; data <= (line2 >> (8 * (15 - char_index))) & 8'hFF; // G?i k? t? t? line2
+                                en <= 1; rs <= 1; rw <= 0; data <= (line2 >> (8 * (15 - char_index))) & 8'hFF; // Send the next character from line 2
                             end else if (delay_counter < 100000) begin
                                 en <= 0;
                             end else begin
@@ -143,7 +143,7 @@
                     end
         
                     CHECK_UPDATE: begin
-                        // Quay l?i SET_CURSOR1 ?? ghi n?i dung m?i
+                        // Wait, then clear the LCD before writing the next frame
                        // state <= SET_CURSOR1;
                        if(delay_counter >= 12500000) begin
                          state <= CLEAR_ON;

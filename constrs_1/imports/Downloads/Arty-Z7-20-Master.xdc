@@ -1,7 +1,7 @@
-## This file is a general .xdc for the ARTY Z7-20 Rev.B
-## To use it in a project:
-## - uncomment the lines corresponding to used pins
-## - rename the used ports (in each line, after get_ports) according to the top level signal names in the project
+## Project pin constraints for the ARTY Z7-20 Rev.B
+## Active assignments match the ports of top_button_handler.
+## Unused reference assignments remain commented out.
+## Verify the board revision and external wiring before programming the FPGA.
 
 ## Clock Signal
 set_property -dict { PACKAGE_PIN H16    IOSTANDARD LVCMOS33 } [get_ports { clk }]; #IO_L13P_T2_MRCC_35 Sch=SYSCLK
@@ -146,10 +146,10 @@ set_property -dict { PACKAGE_PIN T5    IOSTANDARD LVCMOS33 } [get_ports { data[1
 set_property -dict { PACKAGE_PIN U10   IOSTANDARD LVCMOS33 } [get_ports { data[2] }]; #IO_L12N_T1_MRCC_13 Sch=CK_A5
 
 
-## ChipKit Inner Analog Header - as Differential Analog Inputs
-## NOTE: These ports can be used as differential analog inputs with voltages from 0-1.0V (ChipKit analog pins A6-A11) or as digital I/O.
-## WARNING: Do not use both sets of constraints at the same time!
-## NOTE: The following constraints should be used with the XADC core when using these ports as analog inputs.
+## ChipKit Inner Analog Header - used as LCD Digital Outputs
+## NOTE: A6-A10 carry LCD data bits 3-7 as LVCMOS33 digital outputs in this design.
+## WARNING: Do not enable another assignment for these package pins at the same time.
+## The unused A11 analog reference assignment remains commented out below.
 set_property -dict { PACKAGE_PIN F19   IOSTANDARD LVCMOS33 } [get_ports { data[3] }]; #IO_L15P_T2_DQS_AD12P_35 Sch=AD12_P   ChipKit pin=A6
 set_property -dict { PACKAGE_PIN F20   IOSTANDARD LVCMOS33 } [get_ports { data[4] }]; #IO_L15N_T2_DQS_AD12N_35 Sch=AD12_N   ChipKit pin=A7
 set_property -dict { PACKAGE_PIN C20   IOSTANDARD LVCMOS33 } [get_ports { data[5]  }]; #IO_L1P_T0_AD0P_35       Sch=AD0_P    ChipKit pin=A8

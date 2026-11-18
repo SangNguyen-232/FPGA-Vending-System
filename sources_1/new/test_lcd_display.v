@@ -44,9 +44,9 @@ module test_lcd_display;
         clk = 0; rst = 1;
         #10 rst = 0;
 
-        // Gán d? li?u test
-        line1 = 128'h20202020657275532061696C204920; // "I am User    "
-        line2 = 128'h202020202020206E696D644120616C; // "I am Admin   "
+        // Assign the original hexadecimal test payloads
+        line1 = 128'h20202020657275532061696C204920; // Legacy payload; not a correctly ordered sixteen-character text string
+        line2 = 128'h202020202020206E696D644120616C; // Legacy payload; not a correctly ordered sixteen-character text string
 
         #1000 $stop;
     end

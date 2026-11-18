@@ -1,47 +1,40 @@
-# CO3091 - Đồ án Thiết kế luận lý
+# FPGA Vending System
 
-## Giới thiệu
-Bán hàng tự động là một hình thức bán hàng rất phổ biến ở các nước phát triển. Lợi ích của
-bán hàng tự động là tiết kiệm được chi phí trong kinh doanh khi không cần phải thuê nhân viên
-bán hàng cũng như tìm kiếm mặt bằng thuê cửa hàng. Ngoài ra, người mua hàng có thể được mua
-với giá tốt nhất. Nguyên tắc hoạt động cơ bản của máy bán hàng tự động là lưu trữ lượng sản
-phẩm với giá thành cho từng sản phẩm. Khi có người mua hàng, tùy thuộc vào sản phẩm được
-chọn, máy sẽ tính ra lượng tiền tương ứng cần thanh toán. Sau đó, người mua hàng phải trả tiền
-và nhận sản phẩm, đồng thời máy sẽ trả tiền thừa cho người mua hàng (nếu có) và kết thúc giao
-dịch.
+A Verilog vending-machine controller developed for **CO3091 - Logic Design Project**. The design targets the programmable logic of the Digilent Arty Z7-20 and uses buttons, switches, a parallel 16x2 character LCD, LEDs, and four BCD digit outputs.
 
-## Chức năng
+Start with [GUIDE.md](GUIDE.md) for prerequisites, cloning, Vivado project creation, simulation, wiring, programming, and a manual verification procedure.
 
-### 1. **Chế độ**
-- Hệ thống có **2 chế độ**: **User** và **Admin**.
-- Chuyển đổi chế độ thông qua switch được chỉ định.
+The [course technical report](DATKLL.pdf), dated December 15, 2024, provides the project's original design narrative, diagrams, and team contribution record. Some descriptions differ from the current RTL; consult the [report-to-source comparison](GUIDE.md#11-technical-report-and-source-alignment) before using it as an operating specification.
 
-### 2. **Hiển thị thông tin**
-- Hệ thống sẽ hiển thị:
-  - Chế độ hiện tại (User/Admin).
-  - Số lượng và giá cả của từng mặt hàng.
-  - Số tiền hiện tại của người dùng.
-- **Màn hình LCD 16x2**: Hiển thị thông tin về chế độ, số lượng và giá cả mặt hàng.
-- **Led 7 đoạn**: Hiển thị số tiền hiện tại của người dùng.
+## Implemented behavior
 
-### 3. **Nạp tiền dành cho người dùng**
-- Người dùng có thể nạp tiền vào máy thông qua nút nhấn được chỉ định.
+- Switch between user and administrator modes.
+- Select one of four products using an external one-hot switch bank.
+- Show product stock, unit prices, requested quantity, and transaction status on the LCD.
+- Add 5 or 10 balance units when no product is selected; clear the balance with a button.
+- Increase or decrease the requested quantity and purchase it when stock and balance permit.
+- Deduct the purchase total, retain the remaining balance, and indicate success using LEDs.
+- In administrator mode, adjust a product's price, add stock, or clear its price and stock.
+- Provide four BCD digits representing the balance for an external display circuit.
 
-### 4. **Lựa chọn các mặt hàng**
-- Người dùng có thể chọn mặt hàng mong muốn thông qua các switch được chỉ định.
+## Repository contents
 
-### 5. **Cập nhật số lượng và giá thành của hàng hóa**
-- Quản trị viên có thể thay đổi thông tin hàng hóa:
-  - Tăng số lượng mặt hàng.
-  - Tăng hoặc giảm giá thành của mặt hàng.
-- Thực hiện các thay đổi thông qua nút bấm được chỉ định.
+| File | Purpose |
+| --- | --- |
+| `sources_1/new/top_button_handler.v` | Top-level controller and product/balance state |
+| `sources_1/new/button_debounce.v` | Button synchronization and debounce logic |
+| `sources_1/new/LCD_display.v` | Parallel 8-bit LCD controller |
+| `sources_1/new/test_lcd_display.v` | Legacy LCD stimulus testbench |
+| `constrs_1/imports/Downloads/Arty-Z7-20-Master.xdc` | Clock and I/O pin constraints |
+| `GUIDE.md` | New-user setup and verification instructions |
+| `DATKLL.pdf` | Course technical report, design diagrams, and contribution record |
 
-### 6. **Cách thức thanh toán**
-- Sau khi người dùng nạp tiền vào máy:
-  1. Hệ thống hiển thị số tiền người dùng đã nạp.
-  2. Kiểm tra số lượng hàng hóa hiện có.
-  3. So sánh số tiền nạp với giá cả mặt hàng muốn mua.
-  4. Hoàn lại tiền thừa (nếu có) cho người dùng.
+## Current limitations
 
+This is an educational RTL prototype. The repository does not include a Vivado project file, a bitstream, a complete external wiring schematic, or a self-checking system test suite. A physical product dispenser, payment reader, and change-return mechanism are not implemented.
 
- 
+The balance is an 8-bit register, the debounce threshold is truncated by its declared width, and the legacy LCD testbench is too short to verify a complete display update. Read the [known limitations](GUIDE.md#9-known-limitations) before using the design. Hardware operation and synthesis must be checked with the tools and board available to you.
+
+## Contribution requirements
+
+Keep code comments, documentation, setup instructions, and other project explanatory text in English. Update `GUIDE.md` whenever prerequisites, pin assignments, build steps, or test procedures change.

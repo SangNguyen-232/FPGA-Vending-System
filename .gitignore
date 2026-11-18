@@ -1,0 +1,8 @@
+# Generated Vivado projects and reports
+/build/
+/.Xil/
+/*.jou
+/*.log
+/*.str
+/*.backup.jou
+/*.backup.log

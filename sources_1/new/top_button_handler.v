@@ -23,26 +23,26 @@
 module top_button_handler(
     input wire clk,
     input wire rst,
-    input wire [3:0] btn,               // 4 nut nhan dau vao
-    input wire [3:0] sw_p,              // Chon san pham
-    input wire sw_au,                   // Chuyen doi che do (0: user, 1: admin)
+    input wire [3:0] btn,               // Four button inputs
+    input wire [3:0] sw_p,              // One-hot product selection
+    input wire sw_au,                   // Operating mode: 0 = user, 1 = administrator
     input wire update_money,
-    output reg [3:0] seg_0_data,        // Hang don vi
-    output reg [3:0] seg_1_data,        // Hang chuc
-    output reg [3:0] seg_2_data,        // Hang tram
-    output reg [3:0] seg_3_data,         // Hang nghin
+    output reg [3:0] seg_0_data,        // Balance units digit (BCD)
+    output reg [3:0] seg_1_data,        // Balance tens digit (BCD)
+    output reg [3:0] seg_2_data,        // Balance hundreds digit (BCD)
+    output reg [3:0] seg_3_data,         // Balance thousands digit (BCD)
     output wire rs, rw, en,
     output reg [3:0] led,
     output wire [7:0] data
 );
-    reg [7:0] product_count_ready[4:0]; // Mang luu so luong san pham da co(4 san pham)
-    reg [7:0] money;               // So tien cua user
-    reg [7:0] price[4:0];              // Gia san pham
-    reg [7:0] price_to_pay;               //Gia san pham phai tra
-    reg [7:0] unit;               //Hang don vi cua tien
-    reg [7:0] dozen;               //Hang chuc cua tien
-    reg [7:0] product_count_current;      // So san pham muon mua
-    reg [7:0] selected_product;           // Chi so san pham duoc chon
+    reg [7:0] product_count_ready[4:0]; // Stock for four products and the no-selection entry
+    reg [7:0] money;               // User balance (8 bits)
+    reg [7:0] price[4:0];              // Product prices
+    reg [7:0] price_to_pay;               // Total purchase price
+    reg [7:0] unit;               // Purchase-price units digit
+    reg [7:0] dozen;               // Purchase-price tens digit
+    reg [7:0] product_count_current;      // Requested purchase quantity
+    reg [7:0] selected_product;           // Selected product index
     reg [3:0] flag_led;
     integer i;                          // Loop
     reg [127:0] lcd_line1;              // Flattened array
@@ -51,11 +51,11 @@ module top_button_handler(
     reg [1:0] flag_counter;
     reg [7:0] count_down;
     
-    // Tin hieu nut nhan sau khi debounce
+    // Debounced button event signals
     wire btn0_flag, btn1_flag, btn2_flag, btn3_flag;
     
 
-    // Module debounce cho 4 nut nhan
+    // Debounce each of the four buttons
     button_debounce db0 (.clk(clk), .rst(rst), .button_in(btn[0]), .button_flag(btn0_flag));
     button_debounce db1 (.clk(clk), .rst(rst), .button_in(btn[1]), .button_flag(btn1_flag));
     button_debounce db2 (.clk(clk), .rst(rst), .button_in(btn[2]), .button_flag(btn2_flag));
@@ -99,7 +99,7 @@ module top_button_handler(
                 flag_led = 4'b0000;
             end 
             default: begin
-                selected_product = 8'd5; // Mac dinh
+                selected_product = 8'd5; // Invalid selection: more than one switch is on
                 flag_led = 4'b0000;
             end
             
@@ -109,11 +109,11 @@ module top_button_handler(
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             money = 8'd0;
-            price[0] = 8'd0; // San pham 1
-            price[1] = 8'd0; // San pham 2
-            price[2] = 8'd0; // San pham 3
-            price[3] = 8'd0; // San pham 4
-            price[4] = 8'd0; // Mac dinh
+            price[0] = 8'd0; // Product 1
+            price[1] = 8'd0; // Product 2
+            price[2] = 8'd0; // Product 3
+            price[3] = 8'd0; // Product 4
+            price[4] = 8'd0; // No-selection entry
             counter = 32'd0;
             flag_counter = 1'b0;
             product_count_current = 8'd0;
@@ -122,20 +122,20 @@ module top_button_handler(
             unit = 8'd0;
             dozen = 8'd0;
             for (i = 0; i <= 4; i = i + 1) begin
-                product_count_ready[i] = 8'd0; // Reset so luong san pham
+                product_count_ready[i] = 8'd0; // Reset product stock
             end
-           lcd_line1 <= 128'd0; // ??t gi? tr? m?c ??nh cho d?ng LCD 1
-           lcd_line2 <= 128'd0; // ??t gi? tr? m?c ??nh cho d?ng LCD 2
+           lcd_line1 <= 128'd0; // Reset the first LCD line
+           lcd_line2 <= 128'd0; // Reset the second LCD line
         end else begin
-            // LED 7 - segment luon hien thi tien cua user
+            // Output the user balance as decimal digits
             seg_0_data <= money % 10;
             seg_1_data <= (money / 10) % 10;
-            // Hien thi tien phai tra
+            // Output the higher balance digits
             seg_2_data <= (money / 100) % 10;
             seg_3_data <= (money / 1000) % 10;
-             // Phan biet che do
+             // Select the operating mode
             if (sw_au == 0) begin
-                // Che do user
+                // User mode
                
                 if (selected_product != 4 && selected_product != 5) begin
                     if(flag_counter == 1) begin
@@ -214,7 +214,7 @@ module top_button_handler(
                     end
                 end
                 
-                else if(selected_product == 4) begin //Nap tien
+                else if(selected_product == 4) begin // Balance controls when no product is selected
                     if (btn0_flag && money < 9995) money <= money + 5;
                     if (btn1_flag && money < 9990) money <= money + 10;
                     if (btn2_flag) money <= 0;
@@ -228,7 +228,7 @@ module top_button_handler(
                                  8'h50, 8'h34, 8'h3A, 8'h30 + price[3], 8'h24, 8'h5F, 8'h30 + product_count_ready[3]};  //  4: 9$_0
 
                 end
-                else if(selected_product == 5) begin //hien chu ONLY_1_SWITCH_ON 
+                else if(selected_product == 5) begin // Display ONLY_1_SWITCH_ON for an invalid selection
                     lcd_line1 = {8'h4F, 8'h4E, 8'h4C, 8'h59, 8'h5F, 8'h31, 8'h5F, 8'h53, 8'h57, 8'h49, 8'h54, 8'h43, 8'h48, 8'h5F, 8'h4F, 8'h4E};
                     
                     lcd_line2 = {8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20,
@@ -236,7 +236,7 @@ module top_button_handler(
                 end
                
             end else begin
-                // Che do admin
+                // Administrator mode
                  price_to_pay <= 0;
                  product_count_current <= 0;
                 if (selected_product != 4 && selected_product != 5) begin
@@ -258,9 +258,9 @@ module top_button_handler(
                         product_count_ready[selected_product] <= 0;
                     end
                     lcd_line1 <= {8'h20, 8'h20, 8'h41, 8'h44, 8'h4D, 8'h49, 8'h4E, 8'h20, 8'h4D, 8'h4F, 8'h44, 8'h45, 8'h20, 8'h31 + selected_product, 8'h20, 8'h20};
-                    lcd_line2 <= {8'h50, 8'h72, 8'h69, 8'h63, 8'h65, 8'h3A, 8'h30 + price[selected_product], 8'h24, //hien tien
-                                  8'h20, 8'h20, 8'h20, //dau cach
-                                  8'h4E, 8'h75, 8'h6D, 8'h3A, 8'h30 + product_count_ready[selected_product]}; //hien thi so luong
+                    lcd_line2 <= {8'h50, 8'h72, 8'h69, 8'h63, 8'h65, 8'h3A, 8'h30 + price[selected_product], 8'h24, // Display the product price
+                                  8'h20, 8'h20, 8'h20, // Space characters
+                                  8'h4E, 8'h75, 8'h6D, 8'h3A, 8'h30 + product_count_ready[selected_product]}; // Display product stock
                 end
                 
                  else begin
